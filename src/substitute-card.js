@@ -134,7 +134,7 @@ class SubstituteCard extends HTMLElement {
           <td>${lesson.Fa['#text']}</td>
           <td>${lesson.Le['#text']}</td>
           <td>${lesson.Ra['#text']}</td>
-          <td>${lesson.If ? lesson.If['#text'] : ''}</td>
+          <td>${lesson.If && lesson.If['#text'] ? lesson.If['#text'] : ''}</td>
         </tr>
       `;
     }
