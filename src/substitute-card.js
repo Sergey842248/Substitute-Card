@@ -6,8 +6,11 @@ class SubstituteCard extends HTMLElement {
           .changed-item {
             color: red !important;
           }
+          ha-card.no-header {
+            padding-top: 0px !important;
+          }
         </style>
-        <ha-card header="Substitution plan">
+        <ha-card>
           <div class="card-content">
             <p>Loading substitution plan...</p>
           </div>
@@ -111,8 +114,10 @@ class SubstituteCard extends HTMLElement {
 
     if (this.config.show_date) {
       this.querySelector('ha-card').header = `${kopf.DatumPlan['#text']}`;
+      this.querySelector('ha-card').classList.remove('no-header');
     } else {
-      this.querySelector('ha-card').header = `Substitution plan`;
+      this.querySelector('ha-card').removeAttribute('header');
+      this.querySelector('ha-card').classList.add('no-header');
     }
 
     if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
