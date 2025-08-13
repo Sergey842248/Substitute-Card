@@ -3,15 +3,15 @@ class SubstituteCard extends HTMLElement {
     if (!this.content) {
       this.innerHTML = `
         <ha-card header="Vertretungsplan">
-          <div class="card-content"></div>
+          <div class="card-content">
+            <p>Lade Vertretungsplan...</p>
+          </div>
         </ha-card>
       `;
-      this.content = this.querySelector("div");
+      this.content = this.querySelector(".card-content");
     }
-
-    this.content.innerHTML = `
-      <p>Hier wird der Vertretungsplan angezeigt.</p>
-    `;
+    // We don't want to overwrite the content every time hass is set.
+    // The content is updated by processData().
   }
 
   setConfig(config) {
