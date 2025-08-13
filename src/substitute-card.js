@@ -116,6 +116,16 @@ class SubstituteCard extends HTMLElement {
         lessons = [lessons];
     }
 
+    const getStyledText = (prop, defaultText = '---') => {
+        if (!prop || !prop['#text']) return defaultText;
+        const text = prop['#text'];
+        // The 'AenArt' attribute indicates a change. If it exists, color the text red.
+        if (prop['@attributes'] && prop['@attributes'].AenArt) {
+            return `<span style="color: red;">${text}</span>`;
+        }
+        return text;
+    };
+
     let table = `
       <table>
         <tr>
@@ -130,11 +140,11 @@ class SubstituteCard extends HTMLElement {
     for (const lesson of lessons) {
       table += `
         <tr>
-          <td>${lesson.St && lesson.St['#text'] ? lesson.St['#text'] : '---'}</td>
-          <td>${lesson.Fa && lesson.Fa['#text'] ? lesson.Fa['#text'] : '---'}</td>
-          <td>${lesson.Le && lesson.Le['#text'] ? lesson.Le['#text'] : '---'}</td>
-          <td>${lesson.Ra && lesson.Ra['#text'] ? lesson.Ra['#text'] : '---'}</td>
-          <td>${lesson.If && lesson.If['#text'] ? lesson.If['#text'] : ''}</td>
+          <td>${getStyledText(lesson.St)}</td>
+          <td>${getStyledText(lesson.Fa)}</td>
+          <td>${getStyledText(lesson.Le)}</td>
+          <td>${getStyledText(lesson.Ra)}</td>
+          <td>${getStyledText(lesson.If, '')}</td>
         </tr>
       `;
     }
