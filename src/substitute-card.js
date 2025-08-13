@@ -86,14 +86,28 @@ class SubstituteCard extends HTMLElement {
   }
 
   processData(data) {
+    if (!data.VpMobil || !data.VpMobil.Kopf || !data.VpMobil.Klassen) {
+        this.displayError("Received invalid data from API.");
+        console.error("Invalid data structure:", data);
+        return;
+    }
     const kopf = data.VpMobil.Kopf;
     const klassen = data.VpMobil.Klassen.Kl;
-    const planClass = klassen.find(k => k.Kurz['#text'] === this.config.class);
+
+    // --- DEBUGGING START ---
+    const availableClasses = klassen.map(k => k.Kurz['#text']);
+    console.log("Searching for class:", this.config.class);
+    console.log("Available classes in API data:", availableClasses);
+    // --- DEBUGGING END ---
+
+    const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
+    
+    console.log("Found class object:", planClass);
 
     this.querySelector('ha-card').header = `Vertretungsplan für ${kopf.DatumPlan['#text']}`;
 
     if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
-      this.content.innerHTML = "<p>Keine Vertretungen für heute.</p>";
+      this.content.innerHTML = `<p>Keine Vertretungen für die Klasse ${this.config.class} gefunden.</p>`;
       return;
     }
 
