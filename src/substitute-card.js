@@ -2,6 +2,11 @@ class SubstituteCard extends HTMLElement {
   set hass(hass) {
     if (!this.content) {
       this.innerHTML = `
+        <style>
+          .changed-item {
+            color: red !important;
+          }
+        </style>
         <ha-card header="Vertretungsplan">
           <div class="card-content">
             <p>Lade Vertretungsplan...</p>
@@ -94,16 +99,62 @@ class SubstituteCard extends HTMLElement {
     const kopf = data.VpMobil.Kopf;
     const klassen = data.VpMobil.Klassen.Kl;
 
+    // --- DEBUGGING START ---
+    const availableClasses = klassen.map(k => k.Kurz['#text']);
+    console.log("Searching for class:", this.config.class);
+    console.log("Available classes in API data:", availableClasses);
+    // --- DEBUGGING END ---
+
     const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
+    
+    console.log("Found class object:", planClass);
 
-    this.querySelector('ha-card').header = `Debug Info for ${this.config.class}`;
+    this.querySelector('ha-card').header = `Vertretungsplan für ${kopf.DatumPlan['#text']}`;
 
-    if (!planClass) {
-      this.content.innerHTML = `<p>Class ${this.config.class} not found.</p>`;
+    if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
+      this.content.innerHTML = `<p>Keine Vertretungen für die Klasse ${this.config.class} gefunden.</p>`;
       return;
     }
 
-    this.content.innerHTML = `<pre>${JSON.stringify(planClass, null, 2)}</pre>`;
+    let lessons = planClass.Pl.Std;
+    if (!Array.isArray(lessons)) {
+        lessons = [lessons];
+    }
+
+    const getStyledText = (prop, defaultText = '---') => {
+        const text = (prop && prop['#text']) ? prop['#text'] : defaultText;
+        // If a property has attributes, it's considered changed.
+        if (prop && prop['@attributes']) {
+            return `<span class="changed-item">${text}</span>`;
+        }
+        return text;
+    };
+
+    let table = `
+      <table>
+        <tr>
+          <th>Stunde</th>
+          <th>Fach</th>
+          <th>Lehrer</th>
+          <th>Raum</th>
+          <th>Info</th>
+        </tr>
+    `;
+
+    for (const lesson of lessons) {
+      table += `
+        <tr>
+          <td>${getStyledText(lesson.St)}</td>
+          <td>${getStyledText(lesson.Fa)}</td>
+          <td>${getStyledText(lesson.Le)}</td>
+          <td>${getStyledText(lesson.Ra)}</td>
+          <td>${getStyledText(lesson.If, '')}</td>
+        </tr>
+      `;
+    }
+
+    table += "</table>";
+    this.content.innerHTML = table;
   }
 
   displayError(error, isProxyError = false) {
