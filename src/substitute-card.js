@@ -7,9 +7,9 @@ class SubstituteCard extends HTMLElement {
             color: red !important;
           }
         </style>
-        <ha-card header="Vertretungsplan">
+        <ha-card header="Substitution plan">
           <div class="card-content">
-            <p>Lade Vertretungsplan...</p>
+            <p>Loading substitution plan...</p>
           </div>
         </ha-card>
       `;
@@ -109,10 +109,10 @@ class SubstituteCard extends HTMLElement {
     
     console.log("Found class object:", planClass);
 
-    this.querySelector('ha-card').header = `Vertretungsplan für ${kopf.DatumPlan['#text']}`;
+    this.querySelector('ha-card').header = `Substitution plan for ${kopf.DatumPlan['#text']}`;
 
     if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
-      this.content.innerHTML = `<p>Keine Vertretungen für die Klasse ${this.config.class} gefunden.</p>`;
+      this.content.innerHTML = `<p>No substitution for class ${this.config.class} found.</p>`;
       return;
     }
 
@@ -133,10 +133,10 @@ class SubstituteCard extends HTMLElement {
     let table = `
       <table>
         <tr>
-          <th>Stunde</th>
-          <th>Fach</th>
-          <th>Lehrer</th>
-          <th>Raum</th>
+          <th>Lesson</th>
+          <th>Subject</th>
+          <th>Teacher</th>
+          <th>Room</th>
           <th>Info</th>
         </tr>
     `;
@@ -182,5 +182,5 @@ window.customCards.push({
   type: "substitute-card",
   name: "Substitute Card",
   preview: false,
-  description: "A card to display the substitution plan."
+  description: "A card to display the substitution plan from vpMobil/Indiware."
 });
