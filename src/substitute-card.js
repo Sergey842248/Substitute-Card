@@ -2,6 +2,11 @@ class SubstituteCard extends HTMLElement {
   set hass(hass) {
     if (!this.content) {
       this.innerHTML = `
+        <style>
+          .changed-item {
+            color: red !important;
+          }
+        </style>
         <ha-card header="Vertretungsplan">
           <div class="card-content">
             <p>Lade Vertretungsplan...</p>
@@ -119,9 +124,9 @@ class SubstituteCard extends HTMLElement {
     const getStyledText = (prop, defaultText = '---') => {
         if (!prop || !prop['#text']) return defaultText;
         const text = prop['#text'];
-        // The 'AenArt' attribute indicates a change. If it exists, color the text red.
+        // The 'AenArt' attribute indicates a change. If it exists, add the 'changed-item' class.
         if (prop['@attributes'] && prop['@attributes'].AenArt) {
-            return `<span style="color: red;">${text}</span>`;
+            return `<span class="changed-item">${text}</span>`;
         }
         return text;
     };
