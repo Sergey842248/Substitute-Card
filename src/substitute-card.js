@@ -23,7 +23,7 @@ class SubstituteCard extends HTMLElement {
     if (!config.schoolnumber || !config.username || !config.password || !config.class) {
       throw new Error("Please configure schoolnumber, username, password and class");
     }
-    this.config = config;
+    this.config = { ...config, show_date: config.show_date !== false }; // Default to true if not specified
     this.fetchData();
   }
 
@@ -109,7 +109,11 @@ class SubstituteCard extends HTMLElement {
     
     console.log("Found class object:", planClass);
 
-    this.querySelector('ha-card').header = `Substitution plan for ${kopf.DatumPlan['#text']}`;
+    if (this.config.show_date) {
+      this.querySelector('ha-card').header = `${kopf.DatumPlan['#text']}`;
+    } else {
+      this.querySelector('ha-card').header = `Substitution plan`;
+    }
 
     if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
       this.content.innerHTML = `<p>No substitution for class ${this.config.class} found.</p>`;
