@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { fireEvent } from 'custom-card-helpers';
+import '@polymer/paper-input/paper-input';
 
 @customElement('substitute-card-editor')
 export class SubstituteCardEditor extends LitElement {
@@ -118,3 +119,5 @@ export class SubstituteCardEditor extends LitElement {
     fireEvent(this, 'config-changed', { config: this._config });
   }
 }
+
+customElements.define("substitute-card-editor", SubstituteCardEditor);

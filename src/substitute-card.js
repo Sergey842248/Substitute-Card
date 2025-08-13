@@ -1,14 +1,22 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
 import { fireEvent } from 'custom-card-helpers';
 import './substitute-card-editor'; // Import the editor
 
-@customElement('substitute-card')
 class SubstituteCard extends LitElement {
-  @property({ attribute: false }) hass;
-  @state() config;
-  @state() _error = null;
-  @state() _isProxyError = false;
+  static get properties() {
+    return {
+      hass: {},
+      config: {},
+      _error: { type: String },
+      _isProxyError: { type: Boolean },
+    };
+  }
+
+  constructor() {
+    super();
+    this._error = null;
+    this._isProxyError = false;
+  }
 
   static get styles() {
     return css`
@@ -250,8 +258,7 @@ class SubstituteCard extends LitElement {
   }
 }
 
-// No longer needed as @customElement handles definition
-// customElements.define("substitute-card", SubstituteCard);
+customElements.define("substitute-card", SubstituteCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
