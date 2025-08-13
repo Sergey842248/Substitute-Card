@@ -1,54 +1,22 @@
-import { LitElement, html, css } from 'lit';
-import { fireEvent } from 'custom-card-helpers';
-import './substitute-card-editor'; // Import the editor
-
-class SubstituteCard extends LitElement {
-  static get properties() {
-    return {
-      hass: {},
-      config: {},
-      _error: { type: String },
-      _isProxyError: { type: Boolean },
-    };
-  }
-
-  constructor() {
-    super();
-    this._error = null;
-    this._isProxyError = false;
-  }
-
-  static get styles() {
-    return css`
-      .changed-item {
-        color: red !important;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      th, td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      .error-message {
-        color: red;
-        font-weight: bold;
-      }
-      .proxy-button {
-        margin-top: 10px;
-        padding: 10px 15px;
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-    `;
+class SubstituteCard extends HTMLElement {
+  set hass(hass) {
+    if (!this.content) {
+      this.innerHTML = `
+        <style>
+          .changed-item {
+            color: red !important;
+          }
+        </style>
+        <ha-card header="Vertretungsplan">
+          <div class="card-content">
+            <p>Lade Vertretungsplan...</p>
+          </div>
+        </ha-card>
+      `;
+      this.content = this.querySelector(".card-content");
+    }
+    // We don't want to overwrite the content every time hass is set.
+    // The content is updated by processData().
   }
 
   setConfig(config) {
@@ -56,63 +24,7 @@ class SubstituteCard extends LitElement {
       throw new Error("Please configure schoolnumber, username, password and class");
     }
     this.config = config;
-    this._error = null;
-    this._isProxyError = false;
     this.fetchData();
-  }
-
-  render() {
-    if (this._error) {
-      return html`
-        <ha-card header="Substitution plan">
-          <div class="card-content">
-            <p class="error-message">${this._error}</p>
-            ${this._isProxyError ? html`
-              <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
-              <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
-                  <button class="proxy-button">Activate Proxy</button>
-              </a>
-            ` : ''}
-          </div>
-        </ha-card>
-      `;
-    }
-
-    if (!this.config) {
-      return html`
-        <ha-card header="Substitution plan">
-          <div class="card-content">
-            <p>Lade Vertretungsplan...</p>
-          </div>
-        </ha-card>
-      `;
-    }
-
-    // Initial render or loading state
-    return html`
-      <ha-card header="Substitution plan">
-        <div class="card-content" id="card-content">
-          <p>Lade Vertretungsplan...</p>
-        </div>
-      </ha-card>
-    `;
-  }
-
-  firstUpdated() {
-    if (this.config) {
-      this.fetchData();
-    }
-  }
-
-  updated(changedProperties) {
-    if (changedProperties.has('config') && this.config) {
-      this.fetchData();
-    }
-  }
-
-  displayError(error, isProxyError = false) {
-    this._error = error;
-    this._isProxyError = isProxyError;
   }
 
   async fetchData() {
@@ -197,16 +109,10 @@ class SubstituteCard extends LitElement {
     
     console.log("Found class object:", planClass);
 
-    const cardContent = this.shadowRoot.getElementById('card-content');
-    if (cardContent) {
-      this.shadowRoot.querySelector('ha-card').header = `Substitution plan for ${kopf.DatumPlan['#text']}`;
-    }
-
+    this.querySelector('ha-card').header = `Vertretungsplan für ${kopf.DatumPlan['#text']}`;
 
     if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
-      if (cardContent) {
-        cardContent.innerHTML = `<p>No substitution plan for class ${this.config.class} found.</p>`;
-      }
+      this.content.innerHTML = `<p>Keine Vertretungen für die Klasse ${this.config.class} gefunden.</p>`;
       return;
     }
 
@@ -227,10 +133,10 @@ class SubstituteCard extends LitElement {
     let table = `
       <table>
         <tr>
-          <th>Lesson</th>
-          <th>Subject</th>
-          <th>Teacher</th>
-          <th>Room</th>
+          <th>Stunde</th>
+          <th>Fach</th>
+          <th>Lehrer</th>
+          <th>Raum</th>
           <th>Info</th>
         </tr>
     `;
@@ -248,8 +154,20 @@ class SubstituteCard extends LitElement {
     }
 
     table += "</table>";
-    if (cardContent) {
-      cardContent.innerHTML = table;
+    this.content.innerHTML = table;
+  }
+
+  displayError(error, isProxyError = false) {
+    if (isProxyError) {
+        this.content.innerHTML = `
+            <p style="color: red;"><b>CORS Proxy Error:</b> ${error}</p>
+            <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
+            <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
+                <button>Activate Proxy</button>
+            </a>
+        `;
+    } else {
+        this.content.innerHTML = `<p style="color: red;">${error}</p>`;
     }
   }
 
@@ -259,12 +177,10 @@ class SubstituteCard extends LitElement {
 }
 
 customElements.define("substitute-card", SubstituteCard);
-
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "substitute-card",
   name: "Substitute Card",
   preview: false,
-  description: "A card to display the substitution plan from vpMobil/Indiware.",
-  editor: "substitute-card-editor",
+  description: "A card to display the substitution plan."
 });
