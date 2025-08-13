@@ -38,7 +38,7 @@ class SubstituteCard extends HTMLElement {
       const response = await fetch(url, { headers });
       console.log("Response:", response);
       if (!response.ok) {
-        this.displayError(`Error fetching data: ${response.statusText}`);
+        this.displayError(`Error fetching data: ${response.statusText}`, response.status === 403);
         return;
       }
       const xmlText = await response.text();
@@ -129,8 +129,18 @@ class SubstituteCard extends HTMLElement {
     this.content.innerHTML = table;
   }
 
-  displayError(error) {
-    this.content.innerHTML = `<p style="color: red;">${error}</p>`;
+  displayError(error, isProxyError = false) {
+    if (isProxyError) {
+        this.content.innerHTML = `
+            <p style="color: red;"><b>CORS Proxy Error:</b> ${error}</p>
+            <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
+            <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
+                <button>Activate Proxy</button>
+            </a>
+        `;
+    } else {
+        this.content.innerHTML = `<p style="color: red;">${error}</p>`;
+    }
   }
 
   getCardSize() {
