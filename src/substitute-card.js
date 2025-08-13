@@ -154,7 +154,21 @@ class SubstituteCard extends HTMLElement {
     }
 
     table += "</table>";
-    this.content.innerHTML = table;
+
+    let additionalInfo = '';
+    if (data.VpMobil.Info) {
+        let infoItems = data.VpMobil.Info.Text;
+        if (!Array.isArray(infoItems)) {
+            infoItems = [infoItems];
+        }
+        additionalInfo += '<div class="additional-info">';
+        for (const info of infoItems) {
+            additionalInfo += `<p>${info['#text']}</p>`;
+        }
+        additionalInfo += '</div>';
+    }
+
+    this.content.innerHTML = table + additionalInfo;
   }
 
   displayError(error, isProxyError = false) {
