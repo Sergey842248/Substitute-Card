@@ -23,20 +23,31 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const url = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
+    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+    const targetUrl = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
+    const url = proxyUrl + targetUrl;
+
+    console.log("Fetching data from:", url);
+
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
+    headers.set('X-Requested-With', 'XMLHttpRequest');
+
 
     try {
       const response = await fetch(url, { headers });
+      console.log("Response:", response);
       if (!response.ok) {
         this.displayError(`Error fetching data: ${response.statusText}`);
         return;
       }
       const xmlText = await response.text();
+      console.log("XML Text:", xmlText);
       const data = this.xmlToJson(new DOMParser().parseFromString(xmlText, 'text/xml'));
+      console.log("JSON Data:", data);
       this.processData(data);
     } catch (error) {
+      console.error("Fetch Error:", error);
       this.displayError(`Error fetching data: ${error.message}`);
     }
   }
