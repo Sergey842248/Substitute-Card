@@ -156,17 +156,21 @@ class SubstituteCard extends HTMLElement {
     table += "</table>";
 
     let additionalInfo = '';
-    if (data.VpMobil.Info) {
-        let infoItems = data.VpMobil.Info.Text;
+    console.log("Checking for additional info:", data.VpMobil.ZusatzInfo); // Debugging line
+    if (data.VpMobil.ZusatzInfo && data.VpMobil.ZusatzInfo.ZiZeile) {
+        let infoItems = data.VpMobil.ZusatzInfo.ZiZeile;
         if (!Array.isArray(infoItems)) {
             infoItems = [infoItems];
         }
         additionalInfo += '<div class="additional-info">';
         for (const info of infoItems) {
-            additionalInfo += `<p>${info['#text']}</p>`;
+            if (info && info['#text']) {
+                additionalInfo += `<p>${info['#text']}</p>`;
+            }
         }
         additionalInfo += '</div>';
     }
+    console.log("Generated additionalInfo HTML:", additionalInfo); // Debugging line to check content
 
     this.content.innerHTML = table + additionalInfo;
   }
