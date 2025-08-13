@@ -1,50 +1,30 @@
-import { LitElement, html } from 'lit-element';
-import { fireEvent } from 'home-assistant-js-websocket/dist/util';
-import { HomeAssistant } from 'custom-elements-json/src/types';
-import './substitute-card-editor';
-
-class SubstituteCard extends LitElement {
+class SubstituteCard extends HTMLElement {
   set hass(hass) {
-    this._hass = hass;
-  }
-
-  // This is called every time the config is updated, including from the visual editor
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (changedProperties.has('config') && this.config) {
-      this.fetchData();
+    if (!this.content) {
+      this.innerHTML = `
+        <style>
+          .changed-item {
+            color: red !important;
+          }
+        </style>
+        <ha-card header="Substitution plan">
+          <div class="card-content">
+            <p>Loading substitution plan...</p>
+          </div>
+        </ha-card>
+      `;
+      this.content = this.querySelector(".card-content");
     }
-  }
-
-  render() {
-    return html`
-      <style>
-        .changed-item {
-          color: red !important;
-        }
-      </style>
-      <ha-card header="Substitution plan">
-        <div class="card-content">
-          <p>Loading substitution plan...</p>
-        </div>
-      </ha-card>
-    `;
+    // We don't want to overwrite the content every time hass is set.
+    // The content is updated by processData().
   }
 
   setConfig(config) {
-    // Check if the config is valid for the visual editor
     if (!config.schoolnumber || !config.username || !config.password || !config.class) {
-      // If not valid, set a default config for the editor to display
-      this.config = {
-        schoolnumber: "",
-        username: "",
-        password: "",
-        class: "",
-      };
-      // Throw an error to indicate that the configuration is incomplete
       throw new Error("Please configure schoolnumber, username, password and class");
     }
     this.config = config;
+    this.fetchData();
   }
 
   async fetchData() {
@@ -129,10 +109,10 @@ class SubstituteCard extends LitElement {
     
     console.log("Found class object:", planClass);
 
-    this.shadowRoot.querySelector('ha-card').header = `Substitution plan for ${kopf.DatumPlan['#text']}`;
+    this.querySelector('ha-card').header = `Substitution plan for ${kopf.DatumPlan['#text']}`;
 
     if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
-      this.shadowRoot.querySelector(".card-content").innerHTML = `<p>No substitution for class ${this.config.class} found.</p>`;
+      this.content.innerHTML = `<p>No substitution for class ${this.config.class} found.</p>`;
       return;
     }
 
@@ -174,12 +154,12 @@ class SubstituteCard extends LitElement {
     }
 
     table += "</table>";
-    this.shadowRoot.querySelector(".card-content").innerHTML = table;
+    this.content.innerHTML = table;
   }
 
   displayError(error, isProxyError = false) {
     if (isProxyError) {
-        this.shadowRoot.querySelector(".card-content").innerHTML = `
+        this.content.innerHTML = `
             <p style="color: red;"><b>CORS Proxy Error:</b> ${error}</p>
             <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
             <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
@@ -187,56 +167,12 @@ class SubstituteCard extends LitElement {
             </a>
         `;
     } else {
-        this.shadowRoot.querySelector(".card-content").innerHTML = `<p style="color: red;">${error}</p>`;
+        this.content.innerHTML = `<p style="color: red;">${error}</p>`;
     }
   }
 
   getCardSize() {
     return 3;
-  }
-
-  static get _properties() {
-    return {
-      config: {},
-    };
-  }
-
-  static getEditableProperties() {
-    return [
-      {
-        key: "schoolnumber",
-        label: "School Number",
-        type: "string",
-        required: true,
-      },
-      {
-        key: "username",
-        label: "Username",
-        type: "string",
-        required: true,
-      },
-      {
-        key: "password",
-        label: "Password",
-        type: "password",
-        required: true,
-      },
-      {
-        key: "class",
-        label: "Class",
-        type: "string",
-        required: true,
-      },
-    ];
-  }
-
-  // This is required for the visual editor
-  static getLovelaceEditor() {
-    return class extends SubstituteCardEditor {
-      setConfig(config) {
-        super.setConfig(config);
-      }
-    };
   }
 }
 
