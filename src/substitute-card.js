@@ -128,3 +128,10 @@ class SubstituteCard extends HTMLElement {
 }
 
 customElements.define("substitute-card", SubstituteCard);
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "substitute-card",
+  name: "Substitute Card",
+  preview: false,
+  description: "A card to display the substitution plan."
+});
