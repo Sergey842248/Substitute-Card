@@ -94,63 +94,16 @@ class SubstituteCard extends HTMLElement {
     const kopf = data.VpMobil.Kopf;
     const klassen = data.VpMobil.Klassen.Kl;
 
-    // --- DEBUGGING START ---
-    const availableClasses = klassen.map(k => k.Kurz['#text']);
-    console.log("Searching for class:", this.config.class);
-    console.log("Available classes in API data:", availableClasses);
-    // --- DEBUGGING END ---
-
     const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
-    
-    console.log("Found class object:", planClass);
 
-    this.querySelector('ha-card').header = `Vertretungsplan für ${kopf.DatumPlan['#text']}`;
+    this.querySelector('ha-card').header = `Debug Info for ${this.config.class}`;
 
-    if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
-      this.content.innerHTML = `<p>Keine Vertretungen für die Klasse ${this.config.class} gefunden.</p>`;
+    if (!planClass) {
+      this.content.innerHTML = `<p>Class ${this.config.class} not found.</p>`;
       return;
     }
 
-    let lessons = planClass.Pl.Std;
-    if (!Array.isArray(lessons)) {
-        lessons = [lessons];
-    }
-
-    const getStyledText = (prop, defaultText = '---') => {
-        if (!prop || !prop['#text']) return defaultText;
-        const text = prop['#text'];
-        // The 'AenArt' attribute indicates a change. If it exists, color the text red.
-        if (prop['@attributes'] && prop['@attributes'].AenArt) {
-            return `<span style="color: red;">${text}</span>`;
-        }
-        return text;
-    };
-
-    let table = `
-      <table>
-        <tr>
-          <th>Stunde</th>
-          <th>Fach</th>
-          <th>Lehrer</th>
-          <th>Raum</th>
-          <th>Info</th>
-        </tr>
-    `;
-
-    for (const lesson of lessons) {
-      table += `
-        <tr>
-          <td>${getStyledText(lesson.St)}</td>
-          <td>${getStyledText(lesson.Fa)}</td>
-          <td>${getStyledText(lesson.Le)}</td>
-          <td>${getStyledText(lesson.Ra)}</td>
-          <td>${getStyledText(lesson.If, '')}</td>
-        </tr>
-      `;
-    }
-
-    table += "</table>";
-    this.content.innerHTML = table;
+    this.content.innerHTML = `<pre>${JSON.stringify(planClass, null, 2)}</pre>`;
   }
 
   displayError(error, isProxyError = false) {
