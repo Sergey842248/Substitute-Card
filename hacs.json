@@ -4,5 +4,5 @@
   "content_in_root": false,
   "country": "DE",
   "homeassistant": "2023.1.0",
-  "filename": "substitute-card.js"
+  "filename": "dist/substitute-card.js"
 }
