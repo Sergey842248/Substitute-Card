@@ -130,10 +130,10 @@ class SubstituteCard extends HTMLElement {
     for (const lesson of lessons) {
       table += `
         <tr>
-          <td>${lesson.St['#text']}</td>
-          <td>${lesson.Fa['#text']}</td>
-          <td>${lesson.Le['#text']}</td>
-          <td>${lesson.Ra['#text']}</td>
+          <td>${lesson.St && lesson.St['#text'] ? lesson.St['#text'] : '---'}</td>
+          <td>${lesson.Fa && lesson.Fa['#text'] ? lesson.Fa['#text'] : '---'}</td>
+          <td>${lesson.Le && lesson.Le['#text'] ? lesson.Le['#text'] : '---'}</td>
+          <td>${lesson.Ra && lesson.Ra['#text'] ? lesson.Ra['#text'] : '---'}</td>
           <td>${lesson.If && lesson.If['#text'] ? lesson.If['#text'] : ''}</td>
         </tr>
       `;
