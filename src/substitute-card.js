@@ -31,7 +31,7 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+    const proxyUrl = 'https://corsproxy.io/?';
     const targetUrl = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
     const url = proxyUrl + targetUrl;
 
@@ -185,17 +185,11 @@ class SubstituteCard extends HTMLElement {
   }
 
   displayError(error, isProxyError = false) {
+    let errorMessage = `<p style="color: red;">${error}</p>`;
     if (isProxyError) {
-        this.content.innerHTML = `
-            <p style="color: red;"><b>CORS Proxy Error:</b> ${error}</p>
-            <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
-            <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
-                <button>Activate Proxy</button>
-            </a>
-        `;
-    } else {
-        this.content.innerHTML = `<p style="color: red;">${error}</p>`;
+        errorMessage += `<p>There was an issue fetching the data via the CORS proxy. This could be a temporary problem. Please try reloading.</p>`;
     }
+    this.content.innerHTML = errorMessage;
   }
 
   getCardSize() {
