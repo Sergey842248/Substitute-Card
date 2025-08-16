@@ -31,32 +31,25 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const proxyUrl = 'https://allorigins.hexlet.app/get?url=';
+    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
     const targetUrl = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
-    const url = proxyUrl + encodeURIComponent(targetUrl);
+    const url = proxyUrl + targetUrl;
 
     console.log("Fetching data from:", url);
 
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
+    headers.set('X-Requested-With', 'XMLHttpRequest');
+
 
     try {
       const response = await fetch(url, { headers });
       console.log("Response:", response);
       if (!response.ok) {
-        this.displayError(`Error fetching data via proxy: ${response.statusText}`);
+        this.displayError(`Error fetching data: ${response.statusText}`, response.status === 403);
         return;
       }
-      const jsonResponse = await response.json();
-      if (jsonResponse.status.http_code !== 200 && jsonResponse.status.http_code !== 0) {
-        this.displayError(`Error fetching data from stundenplan24.de: Status ${jsonResponse.status.http_code}`);
-        return;
-      }
-      const xmlText = jsonResponse.contents;
-      if (!xmlText) {
-        this.displayError("Error: Proxy returned empty content. The target server may be down or blocking the request.");
-        return;
-      }
+      const xmlText = await response.text();
       console.log("XML Text:", xmlText);
       const data = this.xmlToJson(new DOMParser().parseFromString(xmlText, 'text/xml'));
       console.log("JSON Data:", data);
@@ -191,8 +184,18 @@ class SubstituteCard extends HTMLElement {
     this.content.innerHTML = table + additionalInfo;
   }
 
-  displayError(error) {
-    this.content.innerHTML = `<p style="color: red;">${error}</p>`;
+  displayError(error, isProxyError = false) {
+    if (isProxyError) {
+        this.content.innerHTML = `
+            <p style="color: red;"><b>CORS Proxy Error:</b> ${error}</p>
+            <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
+            <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
+                <button>Activate Proxy</button>
+            </a>
+        `;
+    } else {
+        this.content.innerHTML = `<p style="color: red;">${error}</p>`;
+    }
   }
 
   getCardSize() {
