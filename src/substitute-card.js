@@ -31,7 +31,7 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const proxyUrl = 'https://corsproxy.io/?';
+    const proxyUrl = 'https://cors.bridged.cc/';
     const targetUrl = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
     const url = proxyUrl + targetUrl;
 
@@ -39,7 +39,6 @@ class SubstituteCard extends HTMLElement {
 
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
-    headers.set('X-Requested-With', 'XMLHttpRequest');
 
 
     try {
@@ -185,11 +184,7 @@ class SubstituteCard extends HTMLElement {
   }
 
   displayError(error, isProxyError = false) {
-    let errorMessage = `<p style="color: red;">${error}</p>`;
-    if (isProxyError) {
-        errorMessage += `<p>There was an issue fetching the data via the CORS proxy. This could be a temporary problem. Please try reloading.</p>`;
-    }
-    this.content.innerHTML = errorMessage;
+    this.content.innerHTML = `<p style="color: red;">${error}</p>`;
   }
 
   getCardSize() {
