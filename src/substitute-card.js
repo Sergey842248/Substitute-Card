@@ -31,24 +31,32 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const proxyUrl = 'https://cors.bridged.cc/';
+    const proxyUrl = 'https://allorigins.hexlet.app/get?url=';
     const targetUrl = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
-    const url = proxyUrl + targetUrl;
+    const url = proxyUrl + encodeURIComponent(targetUrl);
 
     console.log("Fetching data from:", url);
 
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
 
-
     try {
       const response = await fetch(url, { headers });
       console.log("Response:", response);
       if (!response.ok) {
-        this.displayError(`Error fetching data: ${response.statusText}`, response.status === 403);
+        this.displayError(`Error fetching data via proxy: ${response.statusText}`);
         return;
       }
-      const xmlText = await response.text();
+      const jsonResponse = await response.json();
+      if (jsonResponse.status.http_code !== 200 && jsonResponse.status.http_code !== 0) {
+        this.displayError(`Error fetching data from stundenplan24.de: Status ${jsonResponse.status.http_code}`);
+        return;
+      }
+      const xmlText = jsonResponse.contents;
+      if (!xmlText) {
+        this.displayError("Error: Proxy returned empty content. The target server may be down or blocking the request.");
+        return;
+      }
       console.log("XML Text:", xmlText);
       const data = this.xmlToJson(new DOMParser().parseFromString(xmlText, 'text/xml'));
       console.log("JSON Data:", data);
@@ -183,7 +191,7 @@ class SubstituteCard extends HTMLElement {
     this.content.innerHTML = table + additionalInfo;
   }
 
-  displayError(error, isProxyError = false) {
+  displayError(error) {
     this.content.innerHTML = `<p style="color: red;">${error}</p>`;
   }
 
