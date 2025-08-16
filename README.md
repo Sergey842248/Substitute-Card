@@ -1,6 +1,6 @@
 # Substitute Card
 
-A Lovelace card to display the daily substitution plan from the vpMobil/Indiware Substitute App.
+A Lovelace card to display the daily substitution plan from the Substitute App (based on vpMobil/Indiware).
 
 ## Features
 
