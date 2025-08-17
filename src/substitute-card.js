@@ -1,9 +1,9 @@
-const LitElement = Object.getPrototypeOf(
-  customElements.get("ha-panel-lovelace")
-);
-const html = LitElement.prototype.html;
+class SubstituteCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
 
-class SubstituteCard extends LitElement {
   static async getConfigElement() {
     await import("./substitute-card-editor.js");
     return document.createElement("substitute-card-editor");
@@ -19,59 +19,37 @@ class SubstituteCard extends LitElement {
     };
   }
 
-  static get properties() {
-    return {
-      hass: {},
-      config: {},
-      data: {},
-    };
-  }
-
   setConfig(config) {
     if (!config.schoolnumber || !config.username || !config.password || !config.class) {
       throw new Error("Please configure schoolnumber, username, password and class");
     }
-    this.config = { ...config, show_date: config.show_date !== false }; // Default to true if not specified
-  }
-
-  _firstUpdated() {
+    this.config = { ...config, show_date: config.show_date !== false };
     this.fetchData();
   }
 
   async fetchData() {
-    // The proxy is now handled by the local Nginx reverse proxy.
-    // We will configure Nginx to forward requests from /stundenplan-proxy/
-    // to https://www.stundenplan24.de/
     const url = `/stundenplan-proxy/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
-
-    console.log("Fetching data from:", url);
-
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
     headers.set('X-Requested-With', 'XMLHttpRequest');
 
-
     try {
       const response = await fetch(url, { headers });
-      console.log("Response:", response);
       if (!response.ok) {
         this.displayError(`Error fetching data: ${response.statusText}`);
         return;
       }
       const xmlText = await response.text();
-      console.log("XML Text:", xmlText);
       const data = this.xmlToJson(new DOMParser().parseFromString(xmlText, 'text/xml'));
-      console.log("JSON Data:", data);
-      this.processData(data);
+      this.render(data);
     } catch (error) {
-      console.error("Fetch Error:", error);
       this.displayError(`Error fetching data: ${error.message}`);
     }
   }
 
   xmlToJson(xml) {
     let obj = {};
-    if (xml.nodeType == 1) { // element
+    if (xml.nodeType == 1) {
       if (xml.attributes.length > 0) {
         obj["@attributes"] = {};
         for (let j = 0; j < xml.attributes.length; j++) {
@@ -79,7 +57,7 @@ class SubstituteCard extends LitElement {
           obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
         }
       }
-    } else if (xml.nodeType == 3) { // text
+    } else if (xml.nodeType == 3) {
       obj = xml.nodeValue;
     }
 
@@ -102,77 +80,15 @@ class SubstituteCard extends LitElement {
     return obj;
   }
 
-  processData(data) {
-    if (!data.VpMobil || !data.VpMobil.Kopf || !data.VpMobil.Klassen) {
-      this.displayError("Received invalid data from API.");
-      console.error("Invalid data structure:", data);
-      return;
-    }
-    this.data = data;
-  }
-
-  displayError(error) {
-    this.error = error;
-  }
-
-  static get styles() {
-    return html`
-      <style>
-        .changed-item {
-          color: red !important;
-        }
-        ha-card.no-header {
-          padding-top: 0px !important;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        th, td {
-          padding: 8px;
-          text-align: left;
-          border-bottom: 1px solid #ddd;
-        }
-        .additional-info {
-          margin-top: 16px;
-        }
-      </style>
-    `;
-  }
-
-  render() {
-    if (!this.config) {
-      return html``;
-    }
-
-    if (this.error) {
-      return html`
-        <ha-card>
-          <div class="card-content">
-            <p style="color: red;">${this.error}</p>
-          </div>
-        </ha-card>
-      `;
-    }
-
-    if (!this.data) {
-      return html`
-        <ha-card>
-          <div class="card-content">
-            <p>Loading substitution plan...</p>
-          </div>
-        </ha-card>
-      `;
-    }
-
-    const kopf = this.data.VpMobil.Kopf;
-    const klassen = this.data.VpMobil.Klassen.Kl;
+  render(data) {
+    const kopf = data.VpMobil.Kopf;
+    const klassen = data.VpMobil.Klassen.Kl;
     const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
 
     const getStyledText = (prop, defaultText = '---') => {
       const text = (prop && prop['#text']) ? prop['#text'] : defaultText;
       if (prop && prop['@attributes']) {
-        return html`<span class="changed-item">${text}</span>`;
+        return `<span class="changed-item">${text}</span>`;
       }
       return text;
     };
@@ -183,43 +99,68 @@ class SubstituteCard extends LitElement {
     }
 
     let additionalInfo = [];
-    if (this.data.VpMobil.ZusatzInfo && this.data.VpMobil.ZusatzInfo.ZiZeile) {
-      additionalInfo = Array.isArray(this.data.VpMobil.ZusatzInfo.ZiZeile)
-        ? this.data.VpMobil.ZusatzInfo.ZiZeile
-        : [this.data.VpMobil.ZusatzInfo.ZiZeile];
+    if (data.VpMobil.ZusatzInfo && data.VpMobil.ZusatzInfo.ZiZeile) {
+      additionalInfo = Array.isArray(data.VpMobil.ZusatzInfo.ZiZeile)
+        ? data.VpMobil.ZusatzInfo.ZiZeile
+        : [data.VpMobil.ZusatzInfo.ZiZeile];
     }
 
-    return html`
-      <ha-card .header=${this.config.show_date && kopf.DatumPlan ? kopf.DatumPlan['#text'] : ''}
-               class=${this.config.show_date ? '' : 'no-header'}>
+    let table = '';
+    if (lessons.length > 0) {
+      table = `
+        <table>
+          <tr>
+            <th>Lesson</th>
+            <th>Subject</th>
+            <th>Teacher</th>
+            <th>Room</th>
+            <th>Info</th>
+          </tr>
+          ${lessons.map(lesson => `
+            <tr>
+              <td>${getStyledText(lesson.St)}</td>
+              <td>${getStyledText(lesson.Fa)}</td>
+              <td>${getStyledText(lesson.Le)}</td>
+              <td>${getStyledText(lesson.Ra)}</td>
+              <td>${getStyledText(lesson.If, '')}</td>
+            </tr>
+          `).join('')}
+        </table>
+      `;
+    } else {
+      table = `<p>No substitution for class ${this.config.class} found.</p>`;
+    }
+
+    const additionalInfoHtml = additionalInfo.map(info => `<p>${info['#text']}</p>`).join('');
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        .changed-item { color: red !important; }
+        ha-card.no-header { padding-top: 0px !important; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        .additional-info { margin-top: 16px; }
+      </style>
+      <ha-card header="${this.config.show_date && kopf.DatumPlan ? kopf.DatumPlan['#text'] : ''}"
+               class="${this.config.show_date ? '' : 'no-header'}">
         <div class="card-content">
-          ${lessons.length === 0
-            ? html`<p>No substitution for class ${this.config.class} found.</p>`
-            : html`
-              <table>
-                <tr>
-                  <th>Lesson</th>
-                  <th>Subject</th>
-                  <th>Teacher</th>
-                  <th>Room</th>
-                  <th>Info</th>
-                </tr>
-                ${lessons.map(
-                  (lesson) => html`
-                    <tr>
-                      <td>${getStyledText(lesson.St)}</td>
-                      <td>${getStyledText(lesson.Fa)}</td>
-                      <td>${getStyledText(lesson.Le)}</td>
-                      <td>${getStyledText(lesson.Ra)}</td>
-                      <td>${getStyledText(lesson.If, '')}</td>
-                    </tr>
-                  `
-                )}
-              </table>
-            `}
+          ${table}
           <div class="additional-info">
-            ${additionalInfo.map((info) => html`<p>${info['#text']}</p>`)}
+            ${additionalInfoHtml}
           </div>
+        </div>
+      </ha-card>
+    `;
+  }
+
+  displayError(error) {
+    this.shadowRoot.innerHTML = `
+      <style>
+        .error { color: red; }
+      </style>
+      <ha-card>
+        <div class="card-content">
+          <p class="error">${error}</p>
         </div>
       </ha-card>
     `;
