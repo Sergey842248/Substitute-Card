@@ -1,10 +1,9 @@
-const LitElement = Object.getPrototypeOf(
-  customElements.get("ha-panel-lovelace")
-);
-const html = LitElement.prototype.html;
-const css = LitElement.prototype.css;
+class SubstituteCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
 
-class SubstituteCard extends LitElement {
   static async getConfigElement() {
     await import("./substitute-card-editor.js");
     return document.createElement("substitute-card-editor");
@@ -18,26 +17,6 @@ class SubstituteCard extends LitElement {
       class: "",
       show_date: true,
     };
-  }
-
-  static get properties() {
-    return {
-      hass: {},
-      config: {},
-      _data: { state: true },
-      _error: { state: true },
-    };
-  }
-
-  static get styles() {
-    return css`
-      .changed-item { color: red !important; }
-      ha-card.no-header { padding-top: 0px !important; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-      .additional-info { margin-top: 16px; }
-      .error { color: red; }
-    `;
   }
 
   setConfig(config) {
@@ -57,16 +36,14 @@ class SubstituteCard extends LitElement {
     try {
       const response = await fetch(url, { headers });
       if (!response.ok) {
-        this._error = `Error fetching data: ${response.statusText}`;
-        this._data = undefined;
+        this.displayError(`Error fetching data: ${response.statusText}`);
         return;
       }
       const xmlText = await response.text();
-      this._data = this.xmlToJson(new DOMParser().parseFromString(xmlText, 'text/xml'));
-      this._error = undefined;
+      const data = this.xmlToJson(new DOMParser().parseFromString(xmlText, 'text/xml'));
+      this.renderData(data);
     } catch (error) {
-      this._error = `Error fetching data: ${error.message}`;
-      this._data = undefined;
+      this.displayError(`Error fetching data: ${error.message}`);
     }
   }
 
@@ -103,22 +80,7 @@ class SubstituteCard extends LitElement {
     return obj;
   }
 
-  render() {
-    if (this._error) {
-      return html`
-        <ha-card>
-          <div class="card-content">
-            <p class="error">${this._error}</p>
-          </div>
-        </ha-card>
-      `;
-    }
-
-    if (!this._data) {
-      return html``;
-    }
-
-    const data = this._data;
+  renderData(data) {
     const kopf = data.VpMobil.Kopf;
     const klassen = data.VpMobil.Klassen.Kl;
     const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
@@ -126,7 +88,7 @@ class SubstituteCard extends LitElement {
     const getStyledText = (prop, defaultText = '---') => {
       const text = (prop && prop['#text']) ? prop['#text'] : defaultText;
       if (prop && prop['@attributes']) {
-        return html`<span class="changed-item">${text}</span>`;
+        return `<span class="changed-item">${text}</span>`;
       }
       return text;
     };
@@ -145,7 +107,7 @@ class SubstituteCard extends LitElement {
 
     let table = '';
     if (lessons.length > 0) {
-      table = html`
+      table = `
         <table>
           <tr>
             <th>Lesson</th>
@@ -154,7 +116,7 @@ class SubstituteCard extends LitElement {
             <th>Room</th>
             <th>Info</th>
           </tr>
-          ${lessons.map(lesson => html`
+          ${lessons.map(lesson => `
             <tr>
               <td>${getStyledText(lesson.St)}</td>
               <td>${getStyledText(lesson.Fa)}</td>
@@ -162,18 +124,26 @@ class SubstituteCard extends LitElement {
               <td>${getStyledText(lesson.Ra)}</td>
               <td>${getStyledText(lesson.If, '')}</td>
             </tr>
-          `)}
+          `).join('')}
         </table>
       `;
     } else {
-      table = html`<p>No substitution for class ${this.config.class} found.</p>`;
+      table = `<p>No substitution for class ${this.config.class} found.</p>`;
     }
 
     const additionalInfoHtml = additionalInfo
       .filter(info => info && info['#text'])
-      .map(info => html`<p>${info['#text']}</p>`);
+      .map(info => `<p>${info['#text']}</p>`)
+      .join('');
 
-    return html`
+    this.shadowRoot.innerHTML = `
+      <style>
+        .changed-item { color: red !important; }
+        ha-card.no-header { padding-top: 0px !important; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        .additional-info { margin-top: 16px; }
+      </style>
       <ha-card header="${this.config.show_date && kopf.DatumPlan ? kopf.DatumPlan['#text'] : ''}"
                class="${this.config.show_date ? '' : 'no-header'}">
         <div class="card-content">
@@ -181,6 +151,19 @@ class SubstituteCard extends LitElement {
           <div class="additional-info">
             ${additionalInfoHtml}
           </div>
+        </div>
+      </ha-card>
+    `;
+  }
+
+  displayError(error) {
+    this.shadowRoot.innerHTML = `
+      <style>
+        .error { color: red; }
+      </style>
+      <ha-card>
+        <div class="card-content">
+          <p class="error">${error}</p>
         </div>
       </ha-card>
     `;

@@ -20,54 +20,32 @@ class SubstituteCardEditor extends LitElement {
       return html``;
     }
 
+    const schema = [
+      { name: "schoolnumber", required: true, selector: { text: {} } },
+      { name: "username", required: true, selector: { text: {} } },
+      { name: "password", required: true, selector: { text: { type: "password" } } },
+      { name: "class", required: true, selector: { text: {} } },
+      { name: "show_date", required: false, selector: { boolean: {} } },
+    ];
+
     return html`
-      <div class="card-config">
-        <ha-textfield
-          label="School Number"
-          .value="${this._config.schoolnumber || ''}"
-          .configValue="${"schoolnumber"}"
-          @input="${this._valueChanged}"
-        ></ha-textfield>
-        <ha-textfield
-          label="Username"
-          .value="${this._config.username || ''}"
-          .configValue="${"username"}"
-          @input="${this._valueChanged}"
-        ></ha-textfield>
-        <ha-textfield
-          label="Password"
-          type="password"
-          .value="${this._config.password || ''}"
-          .configValue="${"password"}"
-          @input="${this._valueChanged}"
-        ></ha-textfield>
-        <ha-textfield
-          label="Class"
-          .value="${this._config.class || ''}"
-          .configValue="${"class"}"
-          @input="${this._valueChanged}"
-        ></ha-textfield>
-        <ha-formfield .label=${"Show Date"}>
-          <ha-switch
-            .checked="${this._config.show_date !== false}"
-            .configValue="${"show_date"}"
-            @change="${this._valueChanged}"
-          ></ha-switch>
-        </ha-formfield>
-      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${schema}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
     `;
   }
 
-  _valueChanged(e) {
-    if (!this._config || !this.hass) {
-      return;
-    }
-    const target = e.target;
-    const newConfig = { ...this._config };
-    if (target.configValue) {
-      newConfig[target.configValue] = target.checked !== undefined ? target.checked : target.value;
-    }
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: newConfig } }));
+  _computeLabel(schema) {
+    return schema.name;
+  }
+
+  _valueChanged(ev) {
+    const config = ev.detail.value;
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config } }));
   }
 }
 
