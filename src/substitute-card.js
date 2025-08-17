@@ -187,7 +187,7 @@ class SubstituteCard extends LitElement {
     }
 
     return html`
-      <ha-card .header=${this.config.show_date ? kopf.DatumPlan['#text'] : ''}
+      <ha-card .header=${this.config.show_date && kopf.DatumPlan ? kopf.DatumPlan['#text'] : ''}
                class=${this.config.show_date ? '' : 'no-header'}>
         <div class="card-content">
           ${lessons.length === 0

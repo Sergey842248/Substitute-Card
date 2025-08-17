@@ -15,10 +15,6 @@ class SubstituteCardEditor extends LitElement {
     this._config = config;
   }
 
-  focus() {
-    this.shadowRoot.querySelector("paper-input").focus();
-  }
-
   render() {
     if (!this.hass) {
       return html``;
@@ -26,47 +22,38 @@ class SubstituteCardEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        <div class="config-row">
-          <paper-input
-            label="School Number"
-            value="${this._config.schoolnumber}"
-            .configValue="${"schoolnumber"}"
-            @value-changed="${this._valueChanged}"
-          ></paper-input>
-        </div>
-        <div class="config-row">
-          <paper-input
-            label="Username"
-            value="${this._config.username}"
-            .configValue="${"username"}"
-            @value-changed="${this._valueChanged}"
-          ></paper-input>
-        </div>
-        <div class="config-row">
-          <paper-input
-            label="Password"
-            type="password"
-            value="${this._config.password}"
-            .configValue="${"password"}"
-            @value-changed="${this._valueChanged}"
-          ></paper-input>
-        </div>
-        <div class="config-row">
-          <paper-input
-            label="Class"
-            value="${this._config.class}"
-            .configValue="${"class"}"
-            @value-changed="${this._valueChanged}"
-          ></paper-input>
-        </div>
-        <div class="config-row">
+        <ha-textfield
+          label="School Number"
+          .value="${this._config.schoolnumber || ''}"
+          .configValue="${"schoolnumber"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-textfield
+          label="Username"
+          .value="${this._config.username || ''}"
+          .configValue="${"username"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-textfield
+          label="Password"
+          type="password"
+          .value="${this._config.password || ''}"
+          .configValue="${"password"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-textfield
+          label="Class"
+          .value="${this._config.class || ''}"
+          .configValue="${"class"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-formfield .label=${"Show Date"}>
           <ha-switch
             .checked="${this._config.show_date !== false}"
             .configValue="${"show_date"}"
             @change="${this._valueChanged}"
-            >Show Date</ha-switch
-          >
-        </div>
+          ></ha-switch>
+        </ha-formfield>
       </div>
     `;
   }
@@ -76,15 +63,11 @@ class SubstituteCardEditor extends LitElement {
       return;
     }
     const target = e.target;
-    if (this[`_${target.id}`] === target.value) {
-      return;
-    }
+    const newConfig = { ...this._config };
     if (target.configValue) {
-      this._config[target.configValue] = target.value;
-    } else {
-      this._config[target.id] = target.checked !== undefined ? target.checked : target.value;
+      newConfig[target.configValue] = target.checked !== undefined ? target.checked : target.value;
     }
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config } }));
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: newConfig } }));
   }
 }
 
