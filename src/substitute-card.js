@@ -32,6 +32,9 @@ class SubstituteCard extends LitElement {
       throw new Error("Please configure schoolnumber, username, password and class");
     }
     this.config = { ...config, show_date: config.show_date !== false }; // Default to true if not specified
+  }
+
+  _firstUpdated() {
     this.fetchData();
   }
 
