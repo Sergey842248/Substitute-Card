@@ -1,69 +1,73 @@
-class SubstituteCardEditor extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
+const LitElement = Object.getPrototypeOf(
+  customElements.get("ha-panel-lovelace")
+);
+const html = LitElement.prototype.html;
+
+class SubstituteCardEditor extends LitElement {
+  static get properties() {
+    return {
+      hass: {},
+      _config: {},
+    };
   }
 
   setConfig(config) {
     this._config = config;
-    this.render();
   }
 
   render() {
-    const style = document.createElement('style');
-    style.textContent = `
-      ha-textfield, ha-switch { display: block; margin-bottom: 16px; }
+    if (!this.hass) {
+      return html``;
+    }
+
+    return html`
+      <div class="card-config">
+        <ha-textfield
+          label="School Number"
+          .value="${this._config.schoolnumber || ''}"
+          .configValue="${"schoolnumber"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-textfield
+          label="Username"
+          .value="${this._config.username || ''}"
+          .configValue="${"username"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-textfield
+          label="Password"
+          type="password"
+          .value="${this._config.password || ''}"
+          .configValue="${"password"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-textfield
+          label="Class"
+          .value="${this._config.class || ''}"
+          .configValue="${"class"}"
+          @input="${this._valueChanged}"
+        ></ha-textfield>
+        <ha-formfield .label=${"Show Date"}>
+          <ha-switch
+            .checked="${this._config.show_date !== false}"
+            .configValue="${"show_date"}"
+            @change="${this._valueChanged}"
+          ></ha-switch>
+        </ha-formfield>
+      </div>
     `;
-
-    this.shadowRoot.innerHTML = ''; // Clear previous content
-    this.shadowRoot.appendChild(style);
-
-    const createTextField = (configValue, label, type = 'text') => {
-      const textField = document.createElement('ha-textfield');
-      textField.label = label;
-      textField.value = this._config[configValue] || '';
-      textField.dataset.configValue = configValue;
-      textField.type = type;
-      textField.addEventListener('input', this._valueChanged.bind(this));
-      return textField;
-    };
-
-    const createSwitch = (configValue, label) => {
-        const formfield = document.createElement('ha-formfield');
-        formfield.label = label;
-        const haSwitch = document.createElement('ha-switch');
-        haSwitch.checked = this._config[configValue] !== false;
-        haSwitch.dataset.configValue = configValue;
-        haSwitch.addEventListener('change', this._valueChanged.bind(this));
-        formfield.appendChild(haSwitch);
-        return formfield;
-    };
-
-    this.shadowRoot.appendChild(createTextField('schoolnumber', 'School Number'));
-    this.shadowRoot.appendChild(createTextField('username', 'Username'));
-    this.shadowRoot.appendChild(createTextField('password', 'Password', 'password'));
-    this.shadowRoot.appendChild(createTextField('class', 'Class'));
-    this.shadowRoot.appendChild(createSwitch('show_date', 'Show Date'));
   }
 
   _valueChanged(e) {
-    if (!this._config) {
+    if (!this._config || !this.hass) {
       return;
     }
     const target = e.target;
     const newConfig = { ...this._config };
-    const configValue = target.dataset.configValue;
-    
-    if (configValue) {
-        newConfig[configValue] = target.checked !== undefined ? target.checked : target.value;
+    if (target.configValue) {
+      newConfig[target.configValue] = target.checked !== undefined ? target.checked : target.value;
     }
-
-    const event = new CustomEvent("config-changed", {
-      detail: { config: newConfig },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: newConfig } }));
   }
 }
 
