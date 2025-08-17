@@ -1,25 +1,30 @@
-class SubstituteCard extends HTMLElement {
-  set hass(hass) {
-    if (!this.content) {
-      this.innerHTML = `
-        <style>
-          .changed-item {
-            color: red !important;
-          }
-          ha-card.no-header {
-            padding-top: 0px !important;
-          }
-        </style>
-        <ha-card>
-          <div class="card-content">
-            <p>Loading substitution plan...</p>
-          </div>
-        </ha-card>
-      `;
-      this.content = this.querySelector(".card-content");
-    }
-    // We don't want to overwrite the content every time hass is set.
-    // The content is updated by processData().
+const LitElement = Object.getPrototypeOf(
+  customElements.get("ha-panel-lovelace")
+);
+const html = LitElement.prototype.html;
+
+class SubstituteCard extends LitElement {
+  static async getConfigElement() {
+    await import("./substitute-card-editor.js");
+    return document.createElement("substitute-card-editor");
+  }
+
+  static getStubConfig() {
+    return {
+      schoolnumber: "",
+      username: "",
+      password: "",
+      class: "",
+      show_date: true,
+    };
+  }
+
+  static get properties() {
+    return {
+      hass: {},
+      config: {},
+      data: {},
+    };
   }
 
   setConfig(config) {
@@ -96,97 +101,125 @@ class SubstituteCard extends HTMLElement {
 
   processData(data) {
     if (!data.VpMobil || !data.VpMobil.Kopf || !data.VpMobil.Klassen) {
-        this.displayError("Received invalid data from API.");
-        console.error("Invalid data structure:", data);
-        return;
-    }
-    const kopf = data.VpMobil.Kopf;
-    const klassen = data.VpMobil.Klassen.Kl;
-
-    // --- DEBUGGING START ---
-    const availableClasses = klassen.map(k => k.Kurz['#text']);
-    console.log("Searching for class:", this.config.class);
-    console.log("Available classes in API data:", availableClasses);
-    // --- DEBUGGING END ---
-
-    const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
-    
-    console.log("Found class object:", planClass);
-
-    if (this.config.show_date) {
-      this.querySelector('ha-card').header = `${kopf.DatumPlan['#text']}`;
-      this.querySelector('ha-card').classList.remove('no-header');
-    } else {
-      this.querySelector('ha-card').removeAttribute('header');
-      this.querySelector('ha-card').classList.add('no-header');
-    }
-
-    if (!planClass || !planClass.Pl || !planClass.Pl.Std) {
-      this.content.innerHTML = `<p>No substitution for class ${this.config.class} found.</p>`;
+      this.displayError("Received invalid data from API.");
+      console.error("Invalid data structure:", data);
       return;
     }
-
-    let lessons = planClass.Pl.Std;
-    if (!Array.isArray(lessons)) {
-        lessons = [lessons];
-    }
-
-    const getStyledText = (prop, defaultText = '---') => {
-        const text = (prop && prop['#text']) ? prop['#text'] : defaultText;
-        // If a property has attributes, it's considered changed.
-        if (prop && prop['@attributes']) {
-            return `<span class="changed-item">${text}</span>`;
-        }
-        return text;
-    };
-
-    let table = `
-      <table>
-        <tr>
-          <th>Lesson</th>
-          <th>Subject</th>
-          <th>Teacher</th>
-          <th>Room</th>
-          <th>Info</th>
-        </tr>
-    `;
-
-    for (const lesson of lessons) {
-      table += `
-        <tr>
-          <td>${getStyledText(lesson.St)}</td>
-          <td>${getStyledText(lesson.Fa)}</td>
-          <td>${getStyledText(lesson.Le)}</td>
-          <td>${getStyledText(lesson.Ra)}</td>
-          <td>${getStyledText(lesson.If, '')}</td>
-        </tr>
-      `;
-    }
-
-    table += "</table>";
-
-    let additionalInfo = '';
-    console.log("Checking for additional info:", data.VpMobil.ZusatzInfo); // Debugging line
-    if (data.VpMobil.ZusatzInfo && data.VpMobil.ZusatzInfo.ZiZeile) {
-        let infoItems = data.VpMobil.ZusatzInfo.ZiZeile;
-        if (!Array.isArray(infoItems)) {
-            infoItems = [infoItems];
-        }
-        additionalInfo += '<div class="additional-info">';
-        for (const info of infoItems) {
-            if (info && info['#text']) {
-                additionalInfo += `<p>${info['#text']}</p>`;
-            }
-        }
-        additionalInfo += '</div>';
-    }
-    console.log("Generated additionalInfo HTML:", additionalInfo); // Debugging line to check content
-
-    this.content.innerHTML = table + additionalInfo;
+    this.data = data;
   }
 
   displayError(error) {
-    this.content.innerHTML = `<p style="color: red;">${error}</p>`;
+    this.error = error;
+  }
+
+  static get styles() {
+    return html`
+      <style>
+        .changed-item {
+          color: red !important;
+        }
+        ha-card.no-header {
+          padding-top: 0px !important;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        th, td {
+          padding: 8px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+        }
+        .additional-info {
+          margin-top: 16px;
+        }
+      </style>
+    `;
+  }
+
+  render() {
+    if (!this.config) {
+      return html``;
+    }
+
+    if (this.error) {
+      return html`
+        <ha-card>
+          <div class="card-content">
+            <p style="color: red;">${this.error}</p>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    if (!this.data) {
+      return html`
+        <ha-card>
+          <div class="card-content">
+            <p>Loading substitution plan...</p>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    const kopf = this.data.VpMobil.Kopf;
+    const klassen = this.data.VpMobil.Klassen.Kl;
+    const planClass = klassen.find(k => k.Kurz['#text'].trim() === this.config.class.trim());
+
+    const getStyledText = (prop, defaultText = '---') => {
+      const text = (prop && prop['#text']) ? prop['#text'] : defaultText;
+      if (prop && prop['@attributes']) {
+        return html`<span class="changed-item">${text}</span>`;
+      }
+      return text;
+    };
+
+    let lessons = [];
+    if (planClass && planClass.Pl && planClass.Pl.Std) {
+      lessons = Array.isArray(planClass.Pl.Std) ? planClass.Pl.Std : [planClass.Pl.Std];
+    }
+
+    let additionalInfo = [];
+    if (this.data.VpMobil.ZusatzInfo && this.data.VpMobil.ZusatzInfo.ZiZeile) {
+      additionalInfo = Array.isArray(this.data.VpMobil.ZusatzInfo.ZiZeile)
+        ? this.data.VpMobil.ZusatzInfo.ZiZeile
+        : [this.data.VpMobil.ZusatzInfo.ZiZeile];
+    }
+
+    return html`
+      <ha-card .header=${this.config.show_date ? kopf.DatumPlan['#text'] : ''}
+               class=${this.config.show_date ? '' : 'no-header'}>
+        <div class="card-content">
+          ${lessons.length === 0
+            ? html`<p>No substitution for class ${this.config.class} found.</p>`
+            : html`
+              <table>
+                <tr>
+                  <th>Lesson</th>
+                  <th>Subject</th>
+                  <th>Teacher</th>
+                  <th>Room</th>
+                  <th>Info</th>
+                </tr>
+                ${lessons.map(
+                  (lesson) => html`
+                    <tr>
+                      <td>${getStyledText(lesson.St)}</td>
+                      <td>${getStyledText(lesson.Fa)}</td>
+                      <td>${getStyledText(lesson.Le)}</td>
+                      <td>${getStyledText(lesson.Ra)}</td>
+                      <td>${getStyledText(lesson.If, '')}</td>
+                    </tr>
+                  `
+                )}
+              </table>
+            `}
+          <div class="additional-info">
+            ${additionalInfo.map((info) => html`<p>${info['#text']}</p>`)}
+          </div>
+        </div>
+      </ha-card>
+    `;
   }
 
   getCardSize() {
