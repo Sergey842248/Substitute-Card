@@ -31,9 +31,10 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-    const targetUrl = `https://www.stundenplan24.de/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
-    const url = proxyUrl + targetUrl;
+    // The proxy is now handled by the local Nginx reverse proxy.
+    // We will configure Nginx to forward requests from /stundenplan-proxy/
+    // to https://www.stundenplan24.de/
+    const url = `/stundenplan-proxy/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
 
     console.log("Fetching data from:", url);
 
@@ -46,7 +47,7 @@ class SubstituteCard extends HTMLElement {
       const response = await fetch(url, { headers });
       console.log("Response:", response);
       if (!response.ok) {
-        this.displayError(`Error fetching data: ${response.statusText}`, response.status === 403);
+        this.displayError(`Error fetching data: ${response.statusText}`);
         return;
       }
       const xmlText = await response.text();
@@ -184,18 +185,8 @@ class SubstituteCard extends HTMLElement {
     this.content.innerHTML = table + additionalInfo;
   }
 
-  displayError(error, isProxyError = false) {
-    if (isProxyError) {
-        this.content.innerHTML = `
-            <p style="color: red;"><b>CORS Proxy Error:</b> ${error}</p>
-            <p>This may be due to the CORS-Anywhere proxy. Please click the button below to activate it, then reload the page.</p>
-            <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" rel="noopener noreferrer">
-                <button>Activate Proxy</button>
-            </a>
-        `;
-    } else {
-        this.content.innerHTML = `<p style="color: red;">${error}</p>`;
-    }
+  displayError(error) {
+    this.content.innerHTML = `<p style="color: red;">${error}</p>`;
   }
 
   getCardSize() {
