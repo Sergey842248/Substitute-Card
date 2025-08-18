@@ -27,24 +27,14 @@ class SubstituteCard extends HTMLElement {
     this.fetchData();
   }
 
-  set hass(hass) {
-    this._hass = hass;
-  }
-
   async fetchData() {
-    const path = `/stundenplan-proxy/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
+    const url = `/stundenplan-proxy/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
     headers.set('X-Requested-With', 'XMLHttpRequest');
 
     try {
-      let response;
-      if (this._hass && this._hass.fetchWithAuth) {
-        response = await this._hass.fetchWithAuth(path, { headers });
-      } else {
-        response = await fetch(path, { headers });
-      }
-
+      const response = await fetch(url, { headers });
       if (!response.ok) {
         this.displayError(`Error fetching data: ${response.statusText}`);
         return;
