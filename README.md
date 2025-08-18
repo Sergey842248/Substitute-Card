@@ -1,7 +1,7 @@
 # Substitute Card
 
 A Lovelace card to display the daily substitution plan from the Substitute App (based on vpMobil/Indiware).
-The Card only works on external Home Asistant Sites, not the ip-based internal ones.
+The Card only works on external Home Asistant Sites, not the ip-based internal ones. For internal use please take version 1.8 in HACS and skip the updates.
 
 
 ## Requirements
