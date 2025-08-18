@@ -28,7 +28,7 @@ class SubstituteCard extends HTMLElement {
   }
 
   async fetchData() {
-    const url = `/stundenplan-proxy/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
+    const url = `${window.location.origin}/stundenplan-proxy/${this.config.schoolnumber}/mobil/mobdaten/Klassen.xml`;
     const headers = new Headers();
     headers.set('Authorization', 'Basic ' + btoa(this.config.username + ":" + this.config.password));
     headers.set('X-Requested-With', 'XMLHttpRequest');
